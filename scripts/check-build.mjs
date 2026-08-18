@@ -54,4 +54,26 @@ assert(
     `JavaScript chunk budget exceeded: ${oversizedChunks.map(({ name, bytes }) => `${name} (${bytes} bytes)`).join(", ")}`,
 );
 
+// Root-absolute public asset URLs in the emitted JS. Vite rewrites `url()` in
+// CSS and anything it bundles to respect `base`, but never a string literal in
+// JavaScript — so "/assets/art/x.png" always hits the ORIGIN ROOT. That is fine
+// locally and 404s on any host serving the game from a subdirectory, as RUN
+// does. It shipped once as "RENDERER UNAVAILABLE" (createBattleScene's first
+// Assets.load rejected, and GameCanvas blames the renderer for it).
+// Author public asset paths through assetUrl() in src/assets/assetUrl.ts.
+const absoluteAssetRefs = fs
+    .readdirSync(path.join(dist, "assets"), { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".js"))
+    .map((entry) => ({
+        name: entry.name,
+        hits: (fs.readFileSync(path.join(dist, "assets", entry.name), "utf8").match(/"\/assets\/[^"]+"/g) ?? []).length,
+    }))
+    .filter(({ hits }) => hits > 0);
+assert(
+    absoluteAssetRefs.length === 0,
+    `root-absolute asset URLs survive in emitted JS (use assetUrl()): ${absoluteAssetRefs
+        .map(({ name, hits }) => `${name} (${hits})`)
+        .join(", ")}`,
+);
+
 console.log(`Build verification passed (${mode}).`);

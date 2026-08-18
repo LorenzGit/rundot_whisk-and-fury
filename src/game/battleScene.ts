@@ -17,16 +17,17 @@ import { store } from "../state/store.ts";
 import { combat, enemyById, FLAVOR_META, type CombatEvent } from "./combat.ts";
 import { createBoneRig } from "./boneRig.ts";
 import type { Stage } from "./stage.ts";
+import { assetUrl } from "../assets/assetUrl.ts";
 
 export interface Scene {
     destroy(): void;
 }
 
 const ARENA_BACKGROUNDS = {
-    sunlit: "/assets/art/sunlit-kitchen-arena.jpg",
-    conservatory: "/assets/art/conservatory-kitchen-arena.jpg",
-    rooftop: "/assets/art/rooftop-patisserie-arena.jpg",
-    seaside: "/assets/art/seaside-festival-arena.jpg",
+    sunlit: assetUrl("assets/art/sunlit-kitchen-arena.jpg"),
+    conservatory: assetUrl("assets/art/conservatory-kitchen-arena.jpg"),
+    rooftop: assetUrl("assets/art/rooftop-patisserie-arena.jpg"),
+    seaside: assetUrl("assets/art/seaside-festival-arena.jpg"),
 } as const;
 
 /** Cell coordinates of each ingredient across the icon atlases. */
@@ -111,12 +112,12 @@ export async function createBattleScene(app: Application, stage: Stage): Promise
     const [backgroundTexture, heroSheet, enemySheet, baseIcons, expansionIcons, expansion2Icons, expansion3Icons] =
         await Promise.all([
             Assets.load<Texture>(ARENA_BACKGROUNDS[enemy.arena]),
-            Assets.load<Texture>("/assets/art/chef-bea-anime.png"),
+            Assets.load<Texture>(assetUrl("assets/art/chef-bea-anime.png")),
             Assets.load<Texture>(enemy.art),
-            Assets.load<Texture>("/assets/art/ingredient-icons-anime.png"),
-            Assets.load<Texture>("/assets/art/ingredient-icons-expansion-anime.png"),
-            Assets.load<Texture>("/assets/art/ingredient-icons-expansion2-anime.png"),
-            Assets.load<Texture>("/assets/art/ingredient-icons-expansion3-anime.png"),
+            Assets.load<Texture>(assetUrl("assets/art/ingredient-icons-anime.png")),
+            Assets.load<Texture>(assetUrl("assets/art/ingredient-icons-expansion-anime.png")),
+            Assets.load<Texture>(assetUrl("assets/art/ingredient-icons-expansion2-anime.png")),
+            Assets.load<Texture>(assetUrl("assets/art/ingredient-icons-expansion3-anime.png")),
         ]);
     const root = new Container();
     /** Behind the characters — victory rays must not wash over the plated dish. */

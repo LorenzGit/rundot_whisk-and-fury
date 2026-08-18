@@ -1,4 +1,5 @@
 import { store } from "../state/store.ts";
+import { assetUrl } from "../assets/assetUrl.ts";
 
 export type SfxCue =
     | "tap"
@@ -123,7 +124,7 @@ export interface AudioDebugSnapshot {
  * decoded into an AudioBuffer: two minutes of 44.1 kHz stereo is ~42 MB of
  * PCM once decoded, which is not worth holding on a phone for a music bed.
  */
-const MUSIC_TRACK = "/assets/audio/pasta-dash.mp3";
+const MUSIC_TRACK = assetUrl("assets/audio/pasta-dash.mp3");
 
 /**
  * Fixed trim on the music bed, applied under the player's Music Volume.

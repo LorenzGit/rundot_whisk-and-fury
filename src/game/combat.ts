@@ -4,6 +4,7 @@ import { runtimeServices } from "../systems/runtimeServices.ts";
 import { consumeSpecial } from "../systems/dailySpecial.ts";
 
 import { analytics, FIRST_PLAY_FUNNEL } from "../systems/analytics/analyticsConfig.ts";
+import { assetUrl } from "../assets/assetUrl.ts";
 export type Flavor = "fresh" | "heat" | "rich" | "savory" | "sweet";
 /** Cards may also be wild (match anything) or prep (never touch the sequence). */
 export type CardFlavor = Flavor | "wild" | "prep";
@@ -93,7 +94,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [7, 9, 6],
         quip: "Untangle me if you can, Chef.",
         arena: "sunlit",
-        art: "/assets/art/spaghetti-kraken-anime.png",
+        art: assetUrl("assets/art/spaghetti-kraken-anime.png"),
         frameAspect: 1,
     },
     {
@@ -105,7 +106,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [8, 10, 7],
         quip: "Pucker up. I bite back.",
         arena: "conservatory",
-        art: "/assets/art/citrus-basilisk-anime.png",
+        art: assetUrl("assets/art/citrus-basilisk-anime.png"),
         frameAspect: 1,
     },
     {
@@ -117,7 +118,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [8, 9, 7],
         quip: "Soft on the outside. Trouble inside.",
         arena: "sunlit",
-        art: "/assets/art/gnocchi-gremlin-anime.png",
+        art: assetUrl("assets/art/gnocchi-gremlin-anime.png"),
         frameAspect: 1,
     },
     {
@@ -129,7 +130,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [8, 11, 7],
         quip: "One slammed door and I explode.",
         arena: "conservatory",
-        art: "/assets/art/souffle-brute-anime.png",
+        art: assetUrl("assets/art/souffle-brute-anime.png"),
         frameAspect: 1,
         mechanic: "eruption",
         trait: `Slip the sequence and it erupts for ${ERUPTION_PRESSURE} pressure.`,
@@ -143,7 +144,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [7, 10, 6],
         quip: "A perfect storm needs perfect seasoning!",
         arena: "seaside",
-        art: "/assets/art/ramen-tempest-anime.png",
+        art: assetUrl("assets/art/ramen-tempest-anime.png"),
         frameAspect: 1,
         mechanic: "storm",
         trait: "The broth builds: +1 pressure every turn.",
@@ -157,7 +158,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [9, 12, 8],
         quip: "Pick a flavor. Any flavor. Wrong.",
         arena: "rooftop",
-        art: "/assets/art/macaron-mimic-anime.png",
+        art: assetUrl("assets/art/macaron-mimic-anime.png"),
         frameAspect: 1,
         mechanic: "shuffle",
         trait: "A wrong flavor reshuffles its whole recipe.",
@@ -171,7 +172,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [9, 12, 8],
         quip: "Darling, dessert is inevitable.",
         arena: "rooftop",
-        art: "/assets/art/tiramisu-phantom-anime.png",
+        art: assetUrl("assets/art/tiramisu-phantom-anime.png"),
         frameAspect: 1,
         mechanic: "veiled",
         trait: "The final flavor stays veiled until it is next.",
@@ -185,7 +186,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [9, 11, 8],
         quip: "Breakfast is never over.",
         arena: "sunlit",
-        art: "/assets/art/waffle-wyrm-anime.png",
+        art: assetUrl("assets/art/waffle-wyrm-anime.png"),
         frameAspect: 1,
         mechanic: "storm",
         trait: "The syrup builds: +1 pressure every turn.",
@@ -199,7 +200,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [10, 13, 9],
         quip: "Every layer has another surprise.",
         arena: "conservatory",
-        art: "/assets/art/ratatouille-golem-anime.png",
+        art: assetUrl("assets/art/ratatouille-golem-anime.png"),
         frameAspect: 1,
     },
     {
@@ -211,7 +212,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [11, 14, 9],
         quip: "From every scorched pan, I rise!",
         arena: "seaside",
-        art: "/assets/art/paella-phoenix-anime.png",
+        art: assetUrl("assets/art/paella-phoenix-anime.png"),
         frameAspect: 1,
         mechanic: "rekindle",
         trait: `Rises from defeat once, rekindled at ${REKINDLE_HP} HP.`,
@@ -225,7 +226,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [10, 13, 11],
         quip: "Steam first. Chaos second.",
         arena: "seaside",
-        art: "/assets/art/dumpling-drake-anime.png",
+        art: assetUrl("assets/art/dumpling-drake-anime.png"),
         frameAspect: 1,
         mechanic: "veiled",
         trait: "The final flavor stays veiled until it is next.",
@@ -239,7 +240,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [11, 15, 10],
         quip: "Mind the crown, darling. It shatters.",
         arena: "rooftop",
-        art: "/assets/art/croquembouche-queen-anime.png",
+        art: assetUrl("assets/art/croquembouche-queen-anime.png"),
         frameAspect: 1,
         mechanic: "armor",
         trait: `${ARMOR_PER_TURN} caramel armor re-hardens every turn.`,
@@ -253,7 +254,7 @@ export const ENEMIES: EnemyDefinition[] = [
         attacks: [10, 14, 9],
         quip: "Convince me. One plate at a time.",
         arena: "sunlit",
-        art: "/assets/art/chef-vesper-anime.png",
+        art: assetUrl("assets/art/chef-vesper-anime.png"),
         frameAspect: 2 / 3,
         mechanic: "critic",
         trait: `At half health she rewrites the recipe, +${CRITIC_PHASE2_PRESSURE} pressure.`,

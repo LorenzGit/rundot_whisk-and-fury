@@ -13,6 +13,7 @@
  * Keep 'critical' small: every asset here delays first interaction.
  */
 import type { AssetsManifest, UnresolvedAsset } from "pixi.js";
+import { assetUrl } from "./assetUrl.ts";
 
 /**
  * A narrowing of Pixi's AssetsManifest: Pixi also allows `assets` to be a
@@ -28,41 +29,44 @@ export const MANIFEST: Manifest = {
         {
             name: "critical",
             assets: [
-                { alias: "key-art", src: "/assets/art/key-art-anime.jpg" },
-                { alias: "key-art-portrait", src: "/assets/art/key-art-anime-portrait.jpg" },
-                { alias: "arena", src: "/assets/art/sunlit-kitchen-arena.jpg" },
-                { alias: "ingredient-icons", src: "/assets/art/ingredient-icons-anime.png" },
-                { alias: "chef-bea", src: "/assets/art/chef-bea-anime.png" },
-                { alias: "spaghetti-kraken", src: "/assets/art/spaghetti-kraken-anime.png" },
+                { alias: "key-art", src: assetUrl("assets/art/key-art-anime.jpg") },
+                { alias: "key-art-portrait", src: assetUrl("assets/art/key-art-anime-portrait.jpg") },
+                { alias: "arena", src: assetUrl("assets/art/sunlit-kitchen-arena.jpg") },
+                { alias: "ingredient-icons", src: assetUrl("assets/art/ingredient-icons-anime.png") },
+                { alias: "chef-bea", src: assetUrl("assets/art/chef-bea-anime.png") },
+                { alias: "spaghetti-kraken", src: assetUrl("assets/art/spaghetti-kraken-anime.png") },
             ],
         },
         {
             name: "deferred",
             assets: [
-                { alias: "souffle-brute", src: "/assets/art/souffle-brute-anime.png" },
-                { alias: "citrus-basilisk", src: "/assets/art/citrus-basilisk-anime.png" },
-                { alias: "macaron-mimic", src: "/assets/art/macaron-mimic-anime.png" },
-                { alias: "paella-phoenix", src: "/assets/art/paella-phoenix-anime.png" },
-                { alias: "tiramisu-phantom", src: "/assets/art/tiramisu-phantom-anime.png" },
-                { alias: "chef-vesper", src: "/assets/art/chef-vesper-anime.png" },
-                { alias: "ramen-tempest", src: "/assets/art/ramen-tempest-anime.png" },
-                { alias: "ratatouille-golem", src: "/assets/art/ratatouille-golem-anime.png" },
-                { alias: "croquembouche-queen", src: "/assets/art/croquembouche-queen-anime.png" },
-                { alias: "ingredient-icons-expansion", src: "/assets/art/ingredient-icons-expansion-anime.png" },
+                { alias: "souffle-brute", src: assetUrl("assets/art/souffle-brute-anime.png") },
+                { alias: "citrus-basilisk", src: assetUrl("assets/art/citrus-basilisk-anime.png") },
+                { alias: "macaron-mimic", src: assetUrl("assets/art/macaron-mimic-anime.png") },
+                { alias: "paella-phoenix", src: assetUrl("assets/art/paella-phoenix-anime.png") },
+                { alias: "tiramisu-phantom", src: assetUrl("assets/art/tiramisu-phantom-anime.png") },
+                { alias: "chef-vesper", src: assetUrl("assets/art/chef-vesper-anime.png") },
+                { alias: "ramen-tempest", src: assetUrl("assets/art/ramen-tempest-anime.png") },
+                { alias: "ratatouille-golem", src: assetUrl("assets/art/ratatouille-golem-anime.png") },
+                { alias: "croquembouche-queen", src: assetUrl("assets/art/croquembouche-queen-anime.png") },
+                {
+                    alias: "ingredient-icons-expansion",
+                    src: assetUrl("assets/art/ingredient-icons-expansion-anime.png"),
+                },
                 {
                     alias: "ingredient-icons-expansion2",
-                    src: "/assets/art/ingredient-icons-expansion2-anime.png",
+                    src: assetUrl("assets/art/ingredient-icons-expansion2-anime.png"),
                 },
                 {
                     alias: "ingredient-icons-expansion3",
-                    src: "/assets/art/ingredient-icons-expansion3-anime.png",
+                    src: assetUrl("assets/art/ingredient-icons-expansion3-anime.png"),
                 },
-                { alias: "gnocchi-gremlin", src: "/assets/art/gnocchi-gremlin-anime.png" },
-                { alias: "waffle-wyrm", src: "/assets/art/waffle-wyrm-anime.png" },
-                { alias: "dumpling-drake", src: "/assets/art/dumpling-drake-anime.png" },
-                { alias: "conservatory-arena", src: "/assets/art/conservatory-kitchen-arena.jpg" },
-                { alias: "rooftop-arena", src: "/assets/art/rooftop-patisserie-arena.jpg" },
-                { alias: "seaside-arena", src: "/assets/art/seaside-festival-arena.jpg" },
+                { alias: "gnocchi-gremlin", src: assetUrl("assets/art/gnocchi-gremlin-anime.png") },
+                { alias: "waffle-wyrm", src: assetUrl("assets/art/waffle-wyrm-anime.png") },
+                { alias: "dumpling-drake", src: assetUrl("assets/art/dumpling-drake-anime.png") },
+                { alias: "conservatory-arena", src: assetUrl("assets/art/conservatory-kitchen-arena.jpg") },
+                { alias: "rooftop-arena", src: assetUrl("assets/art/rooftop-patisserie-arena.jpg") },
+                { alias: "seaside-arena", src: assetUrl("assets/art/seaside-festival-arena.jpg") },
             ],
         },
     ],
