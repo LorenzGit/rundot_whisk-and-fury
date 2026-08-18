@@ -1,0 +1,13 @@
+{
+  "client": {
+    "values": {
+      "runtime": {
+        "notificationDelaySeconds": 86400,
+        "monetization": { "adsEnabled": false, "shopEnabled": false }
+      }
+    },
+    "overrides": [],
+    "experiments": []
+  },
+  "server": { "values": {}, "overrides": [] }
+}

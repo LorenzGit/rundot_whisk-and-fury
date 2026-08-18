@@ -1,0 +1,26 @@
+{
+  "items": [
+    {
+      "itemId": "whisk_fury_chefs_table_pass",
+      "name": "Chef's Table Pass",
+      "description": "A gilded cookbook theme, copper patron badge, and Chef's Table menu title. No combat power.",
+      "category": "non_consumable",
+      "price": { "type": "bucks", "value": "400" },
+      "entitlements": [
+        { "entitlementId": "whisk_fury_chefs_table_pass_entitlement", "quantity": 1, "consumable": false }
+      ],
+      "assets": {},
+      "unique": true,
+      "active": false,
+      "regions": [],
+      "refundEligible": true,
+      "refundWindowHours": 24,
+      "tags": ["cosmetic", "supporter", "non-power"],
+      "sortOrder": 1,
+      "releasedAt": null,
+      "expiresAt": null
+    }
+  ],
+  "sales": [],
+  "collections": []
+}

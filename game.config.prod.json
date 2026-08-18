@@ -1,0 +1,8 @@
+{
+  "gameId": "REPLACE_WITH_WHISK_AND_FURY_GAME_ID",
+  "relativePathToDistFolder": "dist",
+  "usesPreloader": false,
+  "orientation": "portrait",
+  "keywords": ["cooking", "cards", "roguelike", "bosses", "action", "portrait"],
+  "kitId": null
+}
