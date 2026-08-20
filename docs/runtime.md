@@ -64,6 +64,6 @@ Only the following bounded client-visible values are consumed:
 - `runtime.dailyQuestsEnabled` boolean
 - `runtime.notificationDelaySeconds` number clamped to 1 hour through 7 days
 - `runtime.monetization.adsEnabled` boolean, additionally blocked by host capability; ad placement IDs are self-authored and must be renamed per derived game
-- `runtime.monetization.shopEnabled` boolean, additionally blocked by item/entitlement placeholders and capability
+- `runtime.monetization.shopEnabled` boolean kill switch. Missing/undefined keeps a configured shop on; `false` hides checkout. Still blocked by item/entitlement placeholders.
 
 Never place secrets, entitlement ownership, trusted rewards, or anti-cheat decisions in client LiveOps.

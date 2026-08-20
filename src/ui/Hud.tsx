@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { audioManager } from "../audio/audioManager.ts";
 import {
+    type Card,
     combat,
     comboBonus,
     enemyById,
-    incomingPressure,
-    previewPlay,
     FLAVOR_META,
+    incomingPressure,
     MATCH_BONUS,
-    type Card,
     type PlayPreview,
+    previewPlay,
 } from "../game/combat.ts";
 import { store, useStore } from "../state/store.ts";
 import { runtimeServices } from "../systems/runtimeServices.ts";
@@ -287,7 +287,10 @@ export default function Hud() {
 
             <section className="chef-status">
                 <div>
-                    <b>CHEF BEA</b>
+                    <b>
+                        CHEF BEA
+                        {state.chefsTableOwned && <i className="patron-chip">♛ PATRON</i>}
+                    </b>
                     <Meter value={state.playerHp} max={state.playerMaxHp} />
                     <span>
                         {state.playerHp}/{state.playerMaxHp}

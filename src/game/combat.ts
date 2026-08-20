@@ -1,10 +1,9 @@
-import { store, type RunSnapshot } from "../state/store.ts";
-import { saveSystem } from "../systems/save.ts";
-import { runtimeServices } from "../systems/runtimeServices.ts";
-import { consumeSpecial } from "../systems/dailySpecial.ts";
-
-import { analytics, FIRST_PLAY_FUNNEL } from "../systems/analytics/analyticsConfig.ts";
 import { assetUrl } from "../assets/assetUrl.ts";
+import { type RunSnapshot, store } from "../state/store.ts";
+import { analytics, FIRST_PLAY_FUNNEL } from "../systems/analytics/analyticsConfig.ts";
+import { consumeSpecial } from "../systems/dailySpecial.ts";
+import { runtimeServices } from "../systems/runtimeServices.ts";
+import { saveSystem } from "../systems/save.ts";
 export type Flavor = "fresh" | "heat" | "rich" | "savory" | "sweet";
 /** Cards may also be wild (match anything) or prep (never touch the sequence). */
 export type CardFlavor = Flavor | "wild" | "prep";
@@ -539,7 +538,69 @@ export const CARD_LIBRARY: Omit<Card, "id" | "library">[] = [
         guard: 0,
         copy: "Short, dark, decisive.",
     },
+    // Secret Menu pack — exclusive, stronger than the house 1-costs, not Copper Sear.
+    {
+        name: "Black Garlic",
+        ingredient: "garlic",
+        flavor: "savory",
+        cost: 1,
+        damage: 9,
+        guard: 2,
+        copy: "Twice the crush. None of the subtlety.",
+    },
+    {
+        name: "Inferno Peach",
+        ingredient: "peach",
+        flavor: "heat",
+        cost: 1,
+        damage: 10,
+        guard: 0,
+        copy: "Ripe fruit. Bad decisions.",
+    },
+    {
+        name: "Yuzu Crash",
+        ingredient: "lemon",
+        flavor: "fresh",
+        cost: 1,
+        damage: 8,
+        guard: 3,
+        copy: "Citric acid with ambition.",
+    },
+    {
+        name: "Gold Leaf",
+        ingredient: "cream",
+        flavor: "rich",
+        cost: 1,
+        damage: 4,
+        guard: 10,
+        copy: "Edible armor for a loud kitchen.",
+    },
+    {
+        name: "Morel Wild",
+        ingredient: "mushroom",
+        flavor: "wild",
+        cost: 1,
+        damage: 7,
+        guard: 2,
+        copy: "Matches any flavor. Still hits.",
+    },
+    {
+        name: "Off-Menu Shot",
+        ingredient: "espresso",
+        flavor: "heat",
+        cost: 0,
+        damage: 6,
+        guard: 0,
+        copy: "Free heat. No ticket.",
+    },
 ];
+
+export const SECRET_MENU_START = CARD_LIBRARY.length - 6;
+export const SECRET_MENU_INDICES: readonly number[] = [0, 1, 2, 3, 4, 5].map((offset) => SECRET_MENU_START + offset);
+
+export function isSecretMenuIndex(index: number): boolean {
+    return index >= SECRET_MENU_START && index < SECRET_MENU_START + SECRET_MENU_INDICES.length;
+}
 
 export interface DeckDefinition {
     id: DeckId;
@@ -668,9 +729,11 @@ function makeCard(library: number, tag: string | number): Card {
     };
 }
 
-function makeDeck(deckId: DeckId): Card[] {
+function makeDeck(deckId: DeckId, extras = true): Card[] {
     const deck = DECKS.find((candidate) => candidate.id === deckId) ?? DECKS[0]!;
-    return deck.indices.map((index, copy) => makeCard(index, copy));
+    const base = deck.indices.map((index, copy) => makeCard(index, copy));
+    if (!extras || !store.get().secretMenuOwned) return base;
+    return [...base, ...SECRET_MENU_INDICES.map((index, copy) => makeCard(index, `secret-${copy}`))];
 }
 
 function makeTutorialOpening(deck: Card[]): { hand: Card[]; drawPile: Card[]; discardPile: Card[] } {
@@ -689,7 +752,7 @@ function shuffle<T>(values: T[]): T[] {
 }
 
 let eventId = 0;
-let eventListeners = new Set<(event: CombatEvent) => void>();
+const eventListeners = new Set<(event: CombatEvent) => void>();
 function emit(event: CombatEventInput): void {
     const complete = { ...event, id: ++eventId } as CombatEvent;
     for (const listener of eventListeners) listener(complete);
@@ -815,7 +878,7 @@ export const combat = {
         const state = store.get();
         const tutorial = options.tutorial ?? !state.ftueCompleted;
         const deckId: DeckId = tutorial ? "classic" : state.deckChoice;
-        const deck = shuffle(makeDeck(deckId));
+        const deck = shuffle(makeDeck(deckId, !tutorial));
         const enemy = enemyById(tutorial ? "kraken" : TIERS[0]![Math.floor(Math.random() * TIERS[0]!.length)]!);
         const opening = tutorial ? makeTutorialOpening(deck) : draw(5, [], deck, []);
         // A claimed daily special is spent by the NEXT service, not by every
@@ -1096,7 +1159,9 @@ export const combat = {
                     servicesCompleted,
                 });
             } else {
-                const picks = shuffle(CARD_LIBRARY.map((_, index) => index)).slice(0, 3);
+                const picks = shuffle(
+                    CARD_LIBRARY.map((_, index) => index).filter((index) => !isSecretMenuIndex(index)),
+                ).slice(0, 3);
                 store.patch({
                     phase: "reward",
                     rewardChoices: picks.map((index, i) => makeCard(index, `reward-${i}`)),

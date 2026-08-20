@@ -109,6 +109,11 @@ const result = await readFile("src/ui/ResultScreen.tsx", "utf8");
 assert(result.includes('outcome === "verified"'), "rewarded ad grants must be host-verified");
 const pantry = await readFile("src/ui/PantryScreen.tsx", "utf8");
 assert(pantry.includes("shopPriceLabel"), "shop must display catalog-backed price state");
+assert(!pantry.includes("LIVE RUN PRICE"), "Pantry must not show the local-preview price placeholder");
+assert(pantry.includes("shop-get"), "Pantry must show pictured perks, not only a text list");
+assert(pantry.includes("Never grants"), "Pantry must say the kitchen pass is not combat power");
+assert(pantry.includes("Secret Menu") && pantry.includes("pack-grid"), "Pantry must sell the pictured six-card pack");
+assert(combat.includes("SECRET_MENU_INDICES"), "Secret Menu cards must be a named library slice");
 
 const tutorial = await readFile("src/ui/TutorialOverlay.tsx", "utf8");
 for (const lesson of ["START FRESH", "TURN UP THE HEAT", "FINISH RICH", "Serve Turn"]) {

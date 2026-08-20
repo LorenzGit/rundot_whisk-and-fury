@@ -1,22 +1,22 @@
 import packageJson from "../../package.json";
-import { PLATFORM_IDS, isConfiguredPlatformId } from "../config/platform.ts";
+import { isConfiguredPlatformId, PLATFORM_IDS } from "../config/platform.ts";
 import {
     fetchLiveOps,
-    getVerifiedShopPrice,
-    hasVerifiedEntitlement,
     getRunCapabilities,
+    getVerifiedShopPrice,
+    type HapticStyle,
+    hasVerifiedEntitlement,
     purchaseVerifiedShopItem,
     rearmLocalNotification,
     recordAnalytics,
     recordFunnelStep,
     showVerifiedRewardedAd,
     triggerHaptic,
-    type HapticStyle,
     type VerifiedActionResult,
 } from "../sdk/runSdk.ts";
-import { refreshServerTime } from "./serverTime.ts";
 import { store } from "../state/store.ts";
 import { t } from "./localization.ts";
+import { refreshServerTime } from "./serverTime.ts";
 
 export interface RuntimeConfig {
     notificationDelaySeconds: number;
@@ -24,10 +24,18 @@ export interface RuntimeConfig {
     shopEnabled: boolean;
 }
 
+const idsReady =
+    isConfiguredPlatformId(PLATFORM_IDS.chefsTableItem) &&
+    isConfiguredPlatformId(PLATFORM_IDS.chefsTableEntitlement) &&
+    isConfiguredPlatformId(PLATFORM_IDS.secretMenuItem) &&
+    isConfiguredPlatformId(PLATFORM_IDS.secretMenuEntitlement);
+
 const DEFAULTS: Readonly<RuntimeConfig> = Object.freeze({
     notificationDelaySeconds: 86_400,
     adsEnabled: false,
-    shopEnabled: false,
+    // IDs are authored and the Pantry is already player-facing, so the shop
+    // stays on unless LiveOps explicitly turns it off. Ads remain opt-in.
+    shopEnabled: idsReady,
 });
 
 let config: RuntimeConfig = { ...DEFAULTS };
@@ -50,10 +58,7 @@ function normalize(values: Record<string, unknown>): RuntimeConfig {
     return {
         notificationDelaySeconds: Number.isFinite(delay) ? Math.max(3_600, Math.min(delay, 604_800)) : 86_400,
         adsEnabled: monetization.adsEnabled === true && isConfiguredPlatformId(PLATFORM_IDS.rewardedResultsBonus),
-        shopEnabled:
-            monetization.shopEnabled === true &&
-            isConfiguredPlatformId(PLATFORM_IDS.chefsTableItem) &&
-            isConfiguredPlatformId(PLATFORM_IDS.chefsTableEntitlement),
+        shopEnabled: monetization.shopEnabled !== false && idsReady,
     };
 }
 
@@ -102,15 +107,29 @@ async function refreshRuntime(): Promise<void> {
 
 async function syncMonetization(): Promise<void> {
     if (!getRunCapabilities().host) {
-        store.patch({ chefsTableOwned: false, shopPriceLabel: null, monetizationLoading: false });
+        store.patch({
+            chefsTableOwned: false,
+            secretMenuOwned: false,
+            shopPriceLabel: null,
+            secretMenuPriceLabel: null,
+            monetizationLoading: false,
+        });
         return;
     }
     store.patch({ monetizationLoading: true });
-    const [owned, price] = await Promise.all([
+    const [owned, price, secretOwned, secretPrice] = await Promise.all([
         hasVerifiedEntitlement(PLATFORM_IDS.chefsTableEntitlement),
         getVerifiedShopPrice(PLATFORM_IDS.chefsTableItem),
+        hasVerifiedEntitlement(PLATFORM_IDS.secretMenuEntitlement),
+        getVerifiedShopPrice(PLATFORM_IDS.secretMenuItem),
     ]);
-    store.patch({ chefsTableOwned: owned, shopPriceLabel: price, monetizationLoading: false });
+    store.patch({
+        chefsTableOwned: owned,
+        secretMenuOwned: secretOwned,
+        shopPriceLabel: price,
+        secretMenuPriceLabel: secretPrice,
+        monetizationLoading: false,
+    });
 }
 
 function startRefreshCycle(): void {
@@ -152,6 +171,12 @@ export const runtimeServices = {
     async purchaseChefsTable(idempotencyKey: string): Promise<VerifiedActionResult> {
         if (!config.shopEnabled || !isConfiguredPlatformId(PLATFORM_IDS.chefsTableItem)) return "unavailable";
         const result = await purchaseVerifiedShopItem(PLATFORM_IDS.chefsTableItem, idempotencyKey);
+        if (result === "verified") await syncMonetization();
+        return result;
+    },
+    async purchaseSecretMenu(idempotencyKey: string): Promise<VerifiedActionResult> {
+        if (!config.shopEnabled || !isConfiguredPlatformId(PLATFORM_IDS.secretMenuItem)) return "unavailable";
+        const result = await purchaseVerifiedShopItem(PLATFORM_IDS.secretMenuItem, idempotencyKey);
         if (result === "verified") await syncMonetization();
         return result;
     },

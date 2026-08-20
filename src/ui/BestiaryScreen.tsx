@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CARD_LIBRARY, ENEMIES, FLAVOR_META, type Card } from "../game/combat.ts";
+import { CARD_LIBRARY, type Card, ENEMIES, FLAVOR_META, isSecretMenuIndex } from "../game/combat.ts";
 import { useStore } from "../state/store.ts";
 import MenuScreenLayout from "./MenuScreenLayout.tsx";
 
@@ -29,6 +29,7 @@ function CardTile({ card }: { card: Omit<Card, "id" | "library"> }) {
 export default function BestiaryScreen() {
     const [shelf, setShelf] = useState<Shelf>("monsters");
     const defeatedEnemies = useStore((state) => state.defeatedEnemies);
+    const secretMenuOwned = useStore((state) => state.secretMenuOwned);
     const ingredients = Array.from(new Map(CARD_LIBRARY.map((card) => [card.ingredient, card])).values());
     const plated = ENEMIES.filter((enemy) => defeatedEnemies.includes(enemy.id)).length;
     return (
@@ -114,9 +115,20 @@ export default function BestiaryScreen() {
             )}
             {shelf === "cards" && (
                 <section className="card-catalog">
-                    {CARD_LIBRARY.map((card) => (
-                        <CardTile card={card} key={card.name} />
-                    ))}
+                    {CARD_LIBRARY.map((card, index) =>
+                        isSecretMenuIndex(index) && !secretMenuOwned ? (
+                            <article className="catalog-card catalog-locked" key={card.name}>
+                                <span className="ingredient" aria-hidden="true" />
+                                <div>
+                                    <small>SECRET MENU</small>
+                                    <h3>Off-menu card</h3>
+                                    <p>Buy the Secret Menu pack in the Pantry to add this to every service.</p>
+                                </div>
+                            </article>
+                        ) : (
+                            <CardTile card={card} key={card.name} />
+                        ),
+                    )}
                 </section>
             )}
         </MenuScreenLayout>

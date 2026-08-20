@@ -1,13 +1,12 @@
+import { useEffect, useState } from "react";
+import packageJson from "../../package.json";
 import { audioManager } from "../audio/audioManager.ts";
 import { combat, DECKS, enemyById } from "../game/combat.ts";
-import { runtimeServices } from "../systems/runtimeServices.ts";
-import { saveSystem } from "../systems/save.ts";
 import { store, useStore } from "../state/store.ts";
-import packageJson from "../../package.json";
-
 import { analytics, FIRST_PLAY_FUNNEL } from "../systems/analytics/analyticsConfig.ts";
 import { claimSpecial, specialView } from "../systems/dailySpecial.ts";
-import { useEffect, useState } from "react";
+import { runtimeServices } from "../systems/runtimeServices.ts";
+import { saveSystem } from "../systems/save.ts";
 
 /**
  * The daily special, and the only reason the 24h reminder is honest.
@@ -69,6 +68,7 @@ export default function MainMenu() {
     const ftueCompleted = useStore((state) => state.ftueCompleted);
     const deckChoice = useStore((state) => state.deckChoice);
     const savedRun = useStore((state) => state.savedRun);
+    const patron = useStore((state) => state.chefsTableOwned);
     const unlockedDecks = DECKS.filter((deck) => deck.stars <= stars);
     const unlockAudio = () =>
         void audioManager.unlock().then(() => {
@@ -94,6 +94,12 @@ export default function MainMenu() {
                     <br />
                     <span>FURY</span>
                 </h1>
+                {patron && (
+                    <p className="patron-plaque">
+                        <i aria-hidden="true">♛</i>
+                        CHEF'S TABLE
+                    </p>
+                )}
             </section>
             <section className="menu-dock">
                 <p className="title-pitch">

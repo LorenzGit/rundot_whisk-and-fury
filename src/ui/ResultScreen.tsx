@@ -1,12 +1,13 @@
-import { combat } from "../game/combat.ts";
+import { combat, enemyById } from "../game/combat.ts";
 import { store, useStore } from "../state/store.ts";
+import { analytics } from "../systems/analytics/analyticsConfig.ts";
 import { runtimeServices } from "../systems/runtimeServices.ts";
 import { saveSystem } from "../systems/save.ts";
-import { analytics } from "../systems/analytics/analyticsConfig.ts";
 
 export default function ResultScreen() {
     const result = useStore((state) => state.result);
     const claimed = useStore((state) => state.resultBonusClaimed);
+    const enemy = enemyById(useStore((state) => state.enemyId));
     const claimEncore = async () => {
         if (claimed) return;
         const outcome = await runtimeServices.watchResultsAd();
@@ -34,6 +35,19 @@ export default function ResultScreen() {
     return (
         <main className={`result-screen ${result} pt-safe-top pb-safe-bottom`}>
             <div>
+                {result === "victory" && (
+                    <div className="victory-crest">
+                        <span
+                            className="victory-dish"
+                            aria-hidden="true"
+                            style={{ backgroundImage: `url(${enemy.art})` }}
+                        />
+                        <div>
+                            <small>PLATED</small>
+                            <strong>{enemy.name}</strong>
+                        </div>
+                    </div>
+                )}
                 <p className="title-kicker">
                     {result === "victory" ? "THE MIDNIGHT MENU IS SAVED" : "SERVICE IS NOT OVER"}
                 </p>

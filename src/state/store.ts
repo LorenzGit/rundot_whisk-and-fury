@@ -133,7 +133,9 @@ export interface AppState {
     savedRun: RunSnapshot | null;
     resultBonusClaimed: boolean;
     chefsTableOwned: boolean;
+    secretMenuOwned: boolean;
     shopPriceLabel: string | null;
+    secretMenuPriceLabel: string | null;
     monetizationLoading: boolean;
 }
 
@@ -204,7 +206,9 @@ let state: AppState = {
     savedRun: null,
     resultBonusClaimed: false,
     chefsTableOwned: false,
+    secretMenuOwned: false,
     shopPriceLabel: null,
+    secretMenuPriceLabel: null,
     monetizationLoading: false,
 };
 

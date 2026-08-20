@@ -7,12 +7,13 @@
  * try/catch'd, and outside the RUN host (plain `vite dev` in a browser) the
  * app must boot and run anyway.
  */
-import RundotGameAPI from "@series-inc/rundot-game-sdk/api";
-import { audioManager } from "../audio/audioManager.ts";
+
+import type { IdentityChangedEvent, Subscription } from "@series-inc/rundot-game-sdk";
 // Type-only import from the package root (the /api entry doesn't re-export it);
 // erased at build time, so no extra runtime code is pulled in.
 import { HapticFeedbackStyle } from "@series-inc/rundot-game-sdk";
-import type { IdentityChangedEvent, Subscription } from "@series-inc/rundot-game-sdk";
+import RundotGameAPI from "@series-inc/rundot-game-sdk/api";
+import { audioManager } from "../audio/audioManager.ts";
 import { safeAreaOffsetsForFrame } from "./safeArea.ts";
 
 let _ready = false;
@@ -66,9 +67,19 @@ function hapticsAvailableNow(): boolean {
     }
 }
 
+function environmentFlag(name: "ads" | "purchases" | "subscriptions"): boolean | undefined {
+    try {
+        const value = RundotGameAPI.system.getEnvironment()?.capabilities?.[name];
+        if (typeof value === "boolean") return value;
+    } catch {
+        // fall through to the import-time cache
+    }
+    const cached = RundotGameAPI._environmentData?.capabilities?.[name];
+    return typeof cached === "boolean" ? cached : undefined;
+}
+
 function snapshotCapabilities(): RunCapabilities {
     if (!_ready) return OFFLINE_CAPABILITIES;
-    const environment = RundotGameAPI._environmentData?.capabilities;
     return {
         host: true,
         mock: RundotGameAPI.isMock(),
@@ -77,10 +88,17 @@ function snapshotCapabilities(): RunCapabilities {
         liveops: sdkNamespace("liveops"),
         notifications: sdkNamespace("notifications"),
         haptics: hapticsAvailableNow(),
-        ads: environment?.ads === true,
-        purchases: environment?.purchases === true,
-        subscriptions: environment?.subscriptions === true,
+        ads: environmentFlag("ads") === true,
+        // Shop spending is available whenever the shop namespace is present.
+        // Some web hosts omit `capabilities.purchases` even though RB checkout
+        // works; treat an explicit false as the only hard no.
+        purchases: environmentFlag("purchases") !== false && sdkNamespace("shop"),
+        subscriptions: environmentFlag("subscriptions") === true,
     };
+}
+
+function shopReady(): boolean {
+    return _ready && sdkNamespace("shop");
 }
 
 /**
@@ -481,8 +499,16 @@ export async function showVerifiedInterstitialAd(id: string, name: string): Prom
     }
 }
 
+const CANCELLED_SHOP_CODES = new Set(["USER_CANCELLED", "user_cancelled", "cancelled"]);
+const MISSING_SHOP_CODES = new Set(["not-found", "config-not-found", "item-not-available", "collection-not-found"]);
+
+function shopErrorCode(error: unknown): string {
+    const code = (error as { code?: unknown } | null)?.code;
+    return typeof code === "string" ? code : "";
+}
+
 export async function purchaseVerifiedShopItem(itemId: string, idempotencyKey: string): Promise<VerifiedActionResult> {
-    if (!capabilities.purchases || !sdkNamespace("shop")) return "unavailable";
+    if (!shopReady()) return "unavailable";
     try {
         // Store conversion needs the request AND the verdict: a checkout that is
         // started and never resolves is a broken pipeline, while one that resolves
@@ -497,26 +523,42 @@ export async function purchaseVerifiedShopItem(itemId: string, idempotencyKey: s
         // still in "pending_payment" also arrives as "success: true" — granting
         // on that would hand over an unpaid purchase.
         return result.success === true && result.order?.status === "fulfilled" ? "verified" : "failed";
-    } catch {
+    } catch (error) {
+        const code = shopErrorCode(error);
+        if (CANCELLED_SHOP_CODES.has(code)) return "cancelled";
+        if (MISSING_SHOP_CODES.has(code)) return "unavailable";
+        const message = error instanceof Error ? error.message.toLowerCase() : "";
+        if (message.includes("cancel")) return "cancelled";
+        if (message.includes("not found") || message.includes("not available")) return "unavailable";
         return "failed";
     }
 }
 
+function formatShopPrice(price: { type?: string; value?: string } | undefined): string | null {
+    if (!price || price.value == null || price.value === "") return null;
+    if (price.type === "bucks" || price.type === "run_bits") return `${price.value} RB`;
+    return `${price.value} ${String(price.type ?? "").toUpperCase()}`.trim();
+}
+
 export async function getVerifiedShopPrice(itemId: string): Promise<string | null> {
-    if (!capabilities.purchases || !sdkNamespace("shop")) return null;
+    if (!shopReady()) return null;
     try {
-        const catalog = await withTimeout(RundotGameAPI.shop.getCatalog(), 4_000, "shop.getCatalog");
-        const item = catalog.items.find((candidate) => candidate.itemId === itemId && candidate.active);
-        if (!item) return null;
-        const price = item.resolvedPrice.finalPrice;
-        return price.type === "bucks" ? `${price.value} RUN BUCKS` : `${price.value} ${price.type.toUpperCase()}`;
+        const item = await withTimeout(RundotGameAPI.shop.getItemDetail(itemId), 4_000, "shop.getItemDetail");
+        const resolved = item.resolvedPrice?.finalPrice ?? item.price;
+        return formatShopPrice(resolved);
     } catch {
-        return null;
+        try {
+            const catalog = await withTimeout(RundotGameAPI.shop.getCatalog(), 4_000, "shop.getCatalog");
+            const item = catalog.items.find((candidate) => candidate.itemId === itemId && candidate.active);
+            return formatShopPrice(item?.resolvedPrice.finalPrice ?? item?.price);
+        } catch {
+            return null;
+        }
     }
 }
 
 export async function hasVerifiedEntitlement(entitlementId: string): Promise<boolean> {
-    if (!capabilities.purchases || !sdkNamespace("entitlements")) return false;
+    if (!_ready || !sdkNamespace("entitlements")) return false;
     try {
         const quantity = await withTimeout(
             RundotGameAPI.entitlements.getQuantity(entitlementId),
