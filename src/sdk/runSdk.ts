@@ -472,7 +472,14 @@ export async function showVerifiedRewardedAd(id: string, name: string): Promise<
         );
         // Only a confirmed completion earned the reward — `cancelled` covers a
         // video the player closed early, which must not count as a watch.
-        if (completed === true) void recordAnalytics("rewarded_ad_complete", { ad_display_id: id });
+        if (completed === true) {
+            void recordAnalytics("rewarded_ad_complete", { ad_display_id: id });
+            void recordAnalytics("rewarded_ad_watched", { ad_display_id: id });
+        } else {
+            // The decline branch: offered and watched alone cannot separate a
+            // refusal from an ad that never filled.
+            void recordAnalytics("rewarded_ad_dismissed", { ad_display_id: id });
+        }
         return completed === true ? "verified" : "cancelled";
     } catch {
         return "failed";
@@ -516,8 +523,14 @@ export async function purchaseVerifiedShopItem(itemId: string, idempotencyKey: s
         // them. Emitted through this module's own recorder — importing the
         // analytics config here would close a cycle.
         void recordAnalytics("checkout_started", { item_id: itemId });
+        void recordAnalytics("iap_purchase_started", { item_id: itemId });
         const result = await withHostOverlay(() => RundotGameAPI.shop.purchase(itemId, idempotencyKey));
         void recordAnalytics("checkout_result", { item_id: itemId, success: result?.success === true });
+        const fulfilled = result?.success === true && result.order?.status === "fulfilled";
+        void recordAnalytics(fulfilled ? "iap_purchase_complete" : "iap_purchase_failed", {
+            item_id: itemId,
+            order_status: result?.order?.status ?? "none",
+        });
         // `success` only reports that the host accepted the request. Replaying
         // an idempotency key returns the ORIGINAL order verbatim, so an order
         // still in "pending_payment" also arrives as "success: true" — granting
@@ -688,6 +701,107 @@ export async function resolveLaunchIntent(): Promise<{ kind: string; params: Rec
         if (!intent || intent.kind === "timed_out") return null;
         return { kind: intent.kind, params: intent.params ?? {} };
     } catch {
+        return null;
+    }
+}
+
+/**
+ * Submits lifetime services completed to the default leaderboard.
+ *
+ * This game has no score — a service is won or lost, not scored. Services
+ * completed is monotonic, directly comparable between players, and already the
+ * progression the results screen shows, so it is what the boards rank. The
+ * boards shipped configured and empty because nothing ever submitted.
+ * Fire-and-forget; never fabricates acceptance.
+ */
+export async function submitServicesCompleted(services: number, durationSeconds: number): Promise<number | null> {
+    const api = RundotGameAPI as unknown as Record<string, unknown>;
+    if (typeof api.leaderboard !== "object" || api.leaderboard === null || services <= 0) return null;
+    try {
+        const result = await withTimeout(
+            RundotGameAPI.leaderboard.submitScore({
+                score: Math.max(0, Math.round(services)),
+                duration: Math.max(1, Math.round(durationSeconds)),
+                mode: "classic",
+                period: "alltime",
+            }),
+            8_000,
+            "leaderboard.submitScore",
+        );
+        return result?.accepted ? (result.rank ?? null) : null;
+    } catch (error) {
+        console.warn("[runSdk] leaderboard submit unavailable", error);
+        return null;
+    }
+}
+
+export interface LikePromptResult {
+    shown: boolean;
+    liked: boolean;
+    dismissed: boolean;
+    reason: string | null;
+}
+
+const LIKE_PROMPT_KEY = "whisk-and-fury:like-prompt:v1";
+/** Wins to bank before asking. Nobody likes a game they just met. */
+const LIKE_PROMPT_MIN_WINS = 3;
+
+function likeCounterRead(): number {
+    try {
+        return Number(window.localStorage.getItem(LIKE_PROMPT_KEY) ?? "0") || 0;
+    } catch {
+        return 0;
+    }
+}
+
+function likeCounterWrite(value: number): void {
+    try {
+        window.localStorage.setItem(LIKE_PROMPT_KEY, String(value));
+    } catch {
+        /* private mode: worst case the player is asked again next session */
+    }
+}
+
+/**
+ * RUN's native like dialog, asked once at a genuine high point.
+ *
+ * Call this on a WIN and nothing else. It owns the whole policy so every call
+ * site is one line: it banks wins until the player has earned the ask, skips
+ * players who already liked, and never asks twice. `-1` is the spent marker.
+ *
+ * "Unavailable" is deliberately NOT spent — a host that cannot show the dialog
+ * today should still be able to ask tomorrow.
+ *
+ * Never throws and never blocks: a like prompt must not break a results screen.
+ */
+export async function showContextualLikePrompt(): Promise<LikePromptResult | null> {
+    const seen = likeCounterRead();
+    if (seen < 0) return null;
+    if (seen + 1 < LIKE_PROMPT_MIN_WINS) {
+        likeCounterWrite(seen + 1);
+        return null;
+    }
+    const api = RundotGameAPI as unknown as Record<string, unknown>;
+    if (typeof api.popups !== "object" || api.popups === null) return null;
+    try {
+        const state = await withTimeout(RundotGameAPI.popups.getLikeState(), 3_000, "popups.getLikeState");
+        if (state?.isLiked) {
+            likeCounterWrite(-1);
+            return { shown: false, liked: true, dismissed: false, reason: "already_liked" };
+        }
+        const availability = await withTimeout(
+            RundotGameAPI.popups.canShowLikeDialog(),
+            3_000,
+            "popups.canShowLikeDialog",
+        );
+        if (!availability?.available) return { shown: false, liked: false, dismissed: false, reason: "unavailable" };
+        const result = await withTimeout(RundotGameAPI.popups.showLikeDialog(), 15_000, "popups.showLikeDialog");
+        likeCounterWrite(-1);
+        return result?.shown
+            ? { shown: true, liked: result.liked, dismissed: result.dismissed, reason: null }
+            : { shown: false, liked: false, dismissed: false, reason: result?.reason ?? null };
+    } catch (error) {
+        console.warn("[runSdk] like prompt failed", error);
         return null;
     }
 }

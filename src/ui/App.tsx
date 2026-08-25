@@ -20,6 +20,7 @@ import ResultScreen from "./ResultScreen.tsx";
 import BestiaryScreen from "./BestiaryScreen.tsx";
 import PantryScreen from "./PantryScreen.tsx";
 import { applyRunSafeArea } from "../sdk/runSdk.ts";
+import { analytics } from "../systems/analytics/analyticsConfig.ts";
 
 function MenuRoute() {
     const screen = useStore((state) => state.menuScreen);
@@ -51,6 +52,12 @@ function useOrientationSafeArea(): void {
 export default function App() {
     useOrientationSafeArea();
     const phase = useStore((s) => s.phase);
+
+    // RUN's core-loop query expects screen_viewed; this router is the only
+    // place every screen change passes through.
+    useEffect(() => {
+        analytics.event("screen_viewed", { screen: phase });
+    }, [phase]);
     const patron = useStore((s) => s.chefsTableOwned);
     return (
         <div id="app-frame" className="bg-surface text-white" data-patron={patron ? "true" : "false"}>

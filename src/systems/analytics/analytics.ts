@@ -44,6 +44,9 @@ export type EventProps = Record<string, EventPropValue>;
  * `onceEver` marks a first-run funnel: every step is deduped for the player's
  * lifetime. Set it on the FTUE funnel and nothing else.
  */
+/** What ended the session — the `trigger` dimension of session_end_summary_30d. */
+export type SessionEndTrigger = "quit" | "hidden" | "pagehide";
+
 export interface FunnelDefinition {
     order?: number;
     steps: string[];
@@ -109,7 +112,14 @@ export interface Analytics {
      */
     sessionPause(): void;
     /** Record `session_end` with elapsed time and screens viewed. Wire to onQuit. */
-    sessionEnd(): void;
+    sessionEnd(trigger?: SessionEndTrigger): void;
+    /**
+     * Wire the browser's own end-of-session signals. Call once at boot.
+     *
+     * onQuit alone needs a clean host-initiated quit; real players close the
+     * tab or swipe the app away, which is why that path reported almost nothing.
+     */
+    installSessionEndCapture(): void;
     /** Record `experiment_exposure`. Call right after resolving a variant. */
     experimentExposure(experiment: { name: string; variant: string; group?: string | null }): void;
     /** Clear all once-ever marks — wire to any dev "reset progress" action. */
@@ -141,6 +151,11 @@ export function createAnalytics(config: AnalyticsConfig): Analytics {
     // so a device clock change mid-session cannot produce a negative duration.
     const sessionStartedAt = typeof performance !== "undefined" ? performance.now() : 0;
     let screensViewed = 0;
+    /** Last screen reported via `screen_viewed`; the "where did they quit" field. */
+    let lastScreen = "boot";
+    let sessionEndCaptureInstalled = false;
+    /** A session ends once; re-armed when the page becomes visible again. */
+    let sessionEnded = false;
 
     function elapsedSeconds(): number {
         if (typeof performance === "undefined") return 0;
@@ -235,7 +250,11 @@ export function createAnalytics(config: AnalyticsConfig): Analytics {
                 }
             }
             if (props) Object.assign(payload, props);
-            if (name === "screen_view") screensViewed += 1;
+            if (name === "screen_viewed") {
+                screensViewed += 1;
+                const screen = payload.screen;
+                if (typeof screen === "string" && screen) lastScreen = screen;
+            }
             log("event", name, payload);
             safeEmitEvent(name, payload);
         },
@@ -306,8 +325,27 @@ export function createAnalytics(config: AnalyticsConfig): Analytics {
             system.event("session_pause", { elapsed_sec: elapsedSeconds() });
         },
 
-        sessionEnd() {
-            system.event("session_end", { elapsed_sec: elapsedSeconds(), screens_viewed: screensViewed });
+        sessionEnd(trigger = "quit") {
+            if (sessionEnded) return;
+            sessionEnded = true;
+            // RUN's session_end_summary_30d groups by screen and trigger; without
+            // both, every row it returns reads "unknown/unknown".
+            system.event("session_end", {
+                elapsed_sec: elapsedSeconds(),
+                screens_viewed: screensViewed,
+                screen: lastScreen,
+                trigger,
+            });
+        },
+
+        installSessionEndCapture() {
+            if (sessionEndCaptureInstalled || typeof document === "undefined") return;
+            sessionEndCaptureInstalled = true;
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState === "hidden") this.sessionEnd("hidden");
+                else sessionEnded = false;
+            });
+            window.addEventListener("pagehide", () => this.sessionEnd("pagehide"));
         },
 
         experimentExposure(experiment) {

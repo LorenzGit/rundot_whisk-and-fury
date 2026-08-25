@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CARD_LIBRARY, type Card, ENEMIES, FLAVOR_META, SECRET_MENU_START } from "../game/combat.ts";
 import { getRunCapabilities } from "../sdk/runSdk.ts";
 import { store, useStore } from "../state/store.ts";
@@ -48,10 +48,19 @@ export default function PantryScreen() {
     const hosted = getRunCapabilities().host && !getRunCapabilities().mock;
     const busy = purchasing !== null || loading;
 
+    // The purchase funnel needs a denominator: without store_opened/offer_shown
+    // there is no way to tell "nobody bought" from "nobody saw it".
+    useEffect(() => {
+        runtimeServices.track("store_opened", { placement: "pantry", offers: 2 });
+        runtimeServices.track("offer_shown", { product_id: "chefs_table_pass", placement: "pantry" });
+        runtimeServices.track("offer_shown", { product_id: "secret_menu", placement: "pantry" });
+    }, []);
+
     const buyKitchen = async () => {
         if (purchasing || owned) return;
         setPurchasing("kitchen");
         runtimeServices.track("shop_purchase_started", { item: "chefs_table_pass" });
+        runtimeServices.track("offer_clicked", { product_id: "chefs_table_pass", placement: "pantry" });
         const result = await runtimeServices.purchaseChefsTable(crypto.randomUUID());
         setPurchasing(null);
         runtimeServices.track("shop_purchase_result", { item: "chefs_table_pass", result });
@@ -62,6 +71,7 @@ export default function PantryScreen() {
         if (purchasing || packOwned) return;
         setPurchasing("pack");
         runtimeServices.track("shop_purchase_started", { item: "secret_menu" });
+        runtimeServices.track("offer_clicked", { product_id: "secret_menu", placement: "pantry" });
         const result = await runtimeServices.purchaseSecretMenu(crypto.randomUUID());
         setPurchasing(null);
         runtimeServices.track("shop_purchase_result", { item: "secret_menu", result });

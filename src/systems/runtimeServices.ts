@@ -145,6 +145,9 @@ export const runtimeServices = {
     bootstrap(): void {
         startRefreshCycle();
         this.track("game_boot", { version: packageJson.version, host: getRunCapabilities().host });
+        // Canonical boot beat. game_boot is this game's own name and only
+        // game_opened reaches RUN's core-loop query.
+        this.track("game_opened", { version: packageJson.version, host: getRunCapabilities().host });
     },
     resume(): void {
         startRefreshCycle();

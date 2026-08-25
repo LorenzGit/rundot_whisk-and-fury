@@ -61,7 +61,11 @@ async function completeFtue(step: number, skipped: boolean): Promise<void> {
 
 function useStepTracking(step: number | null): void {
     useEffect(() => {
-        if (step !== null) runtimeServices.track("ftue_step_viewed", { step });
+        if (step !== null) {
+            runtimeServices.track("ftue_step_viewed", { step });
+            // Canonical onboarding beat: the first coaching card IS the start.
+            if (step === 0) runtimeServices.track("ftue_started", { step });
+        }
     }, [step]);
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "whisk-and-fury-recipe-rumble",
-  "version": "0.5.7",
+  "version": "1.2.4",
   "description": "An animated culinary roguelike where a fearless chef battles living recipes and rival kitchen bosses.",
   "private": true,
   "license": "SEE LICENSE IN LICENSE.md",

@@ -76,6 +76,19 @@ export function claimSpecial(): SpecialClaim {
         hp: view.hp,
         guard: view.guard,
     });
+    // Canonical payout name alongside the game's own; only reward_claimed and
+    // currency_* reach RUN's economy query.
+    runtimeServices.track("reward_claimed", {
+        amount: 1,
+        currency: "daily_special",
+        source: "daily_special",
+        streak: view.nextStreak,
+    });
+    runtimeServices.track("currency_earned", {
+        currency: "daily_special",
+        amount: 1,
+        source: "daily_reward",
+    });
     // The 24h reminder promised exactly this. Now that it is in hand, cancel it
     // rather than pinging the player about ingredients already on the bench.
     void cancelPrimaryReminder();
@@ -92,6 +105,7 @@ export function consumeSpecial(): { hp: number; guard: number } {
     const streak = Math.max(state.specialStreak, 1);
     store.patch({ specialArmed: false });
     runtimeServices.track("daily_special_spent", { streak });
+    runtimeServices.track("currency_spent", { currency: "daily_special", amount: 1, sink: "service_opening", streak });
     return { hp: hpForStreak(streak), guard: guardForStreak(streak) };
 }
 

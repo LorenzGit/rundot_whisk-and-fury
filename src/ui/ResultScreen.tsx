@@ -15,6 +15,8 @@ export default function ResultScreen() {
         // One schema for every payout so the whole economy reads off one event.
         if (outcome === "verified") {
             analytics.event("reward_granted", { amount: 1, currency: "encore", source: "rewarded_encore" });
+            analytics.event("reward_claimed", { amount: 1, currency: "encore", source: "rewarded_encore" });
+            analytics.event("currency_earned", { currency: "encore", amount: 1, source: "rewarded_ad" });
         }
         if (outcome === "verified") {
             store.patch({

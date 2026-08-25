@@ -3,6 +3,7 @@ import { type RunSnapshot, store } from "../state/store.ts";
 import { analytics, FIRST_PLAY_FUNNEL } from "../systems/analytics/analyticsConfig.ts";
 import { consumeSpecial } from "../systems/dailySpecial.ts";
 import { runtimeServices } from "../systems/runtimeServices.ts";
+import { showContextualLikePrompt, submitServicesCompleted } from "../sdk/runSdk.ts";
 import { saveSystem } from "../systems/save.ts";
 export type Flavor = "fresh" | "heat" | "rich" | "savory" | "sweet";
 /** Cards may also be wild (match anything) or prep (never touch the sequence). */
@@ -841,6 +842,17 @@ function stampRun(stage: RunSnapshot["stage"]): void {
  */
 function recordRunResolved(result: "victory" | "defeat"): number {
     const servicesCompleted = store.get().servicesCompleted + 1;
+    // Canonical loop beats. RUN's core-loop query treats these as distinct, so
+    // folding a defeat into run_completed makes the loop look always-successful.
+    runtimeServices.track(result === "victory" ? "run_completed" : "run_failed", {
+        result,
+        services_completed: servicesCompleted,
+    });
+    // Ask for the like on a win. The wrapper owns the policy (3 wins, once ever).
+    if (result === "victory") void showContextualLikePrompt();
+    // Boards were configured but nothing ever submitted, so they read as "zero
+    // scored players". Fire-and-forget: never blocks the results flow.
+    void submitServicesCompleted(servicesCompleted, 0);
     // Step 4 is gated on step 3's once-ever mark: veterans from builds where
     // ftue_completed never fired must not produce a first_run_ended row with
     // no ftue_completed row, or the funnel reads non-monotonic. New players
@@ -885,6 +897,9 @@ export const combat = {
         // service that day. The tutorial run is excluded: a first-timer has not
         // seen the baseline yet, so a buffed opening teaches the wrong numbers.
         const special = tutorial ? { hp: 0, guard: 0 } : consumeSpecial();
+        // Canonical loop beat. A fresh service only — the resume path below
+        // continues an existing run and must not count as a new one.
+        runtimeServices.track("run_started", { deck: deckId, tutorial });
         store.patch({
             phase: "playing",
             combatPhase: "player",

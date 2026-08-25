@@ -23,6 +23,9 @@ import { resolveReturnLaunch, returnReminders } from "./systems/retention/retent
 // Fired at module scope, before any await: the only row a player who closes the
 // tab mid-load will ever produce. Buffered until markTransportReady() below.
 analytics.installErrorCapture();
+// The browser's own end-of-session signals. onQuit alone needs a clean host
+// quit, which players almost never perform.
+analytics.installSessionEndCapture();
 analytics.funnelStep("load", 1);
 /**
  * Boot sequence. The ORDER here matters — it's the pattern from a shipped RUN
