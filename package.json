@@ -24,7 +24,7 @@
     "format:check": "biome format .",
     "lint": "biome lint src additional_features scripts vite.config.js --diagnostic-level=error --max-diagnostics=none",
     "typecheck": "tsc --noEmit && tsc --project tsconfig.additional-features.json --noEmit",
-    "test": "node --experimental-strip-types scripts/test-daily-special.ts && node scripts/check-game.mjs",
+    "test": "node --experimental-strip-types scripts/test-daily-special.ts && node --experimental-strip-types --experimental-test-module-mocks --no-warnings scripts/test-save-guard.ts && node scripts/check-game.mjs",
     "build": "npm run typecheck && vite build && node scripts/check-build.mjs embedded",
     "build:bundled": "npm run typecheck && cross-env RUNDOT_GAME_DISABLE_EMBEDDED_LIBS=true vite build && node scripts/check-build.mjs bundled",
     "build:multiplayer": "npm run typecheck && cross-env RUNDOT_MULTIPLAYER=1 vite build && node scripts/check-build.mjs multiplayer",
